@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Calculadora manual de banca, entradas e gerenciamento de risco."
+    />
+    <meta name="theme-color" content="#101511" />
+    <title>Calculadora de banca</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="page-header">
+        <a class="brand" href="#" aria-label="Calculadora de banca — início">
+          <span class="brand-mark" aria-hidden="true">B</span>
+          <span>Banco<span class="brand-light"> claro</span></span>
+        </a>
+        <span class="header-note"><span class="status-dot"></span> Cálculo manual</span>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">PAINEL DE GERENCIAMENTO</p>
+        <h1 id="page-title">Calculadora de banca</h1>
+        <p class="intro-copy">
+          Simule suas entradas com os parâmetros que você informar. Os cálculos
+          são feitos localmente neste dispositivo.
+        </p>
+      </section>
+
+      <div class="calculator-layout">
+        <section class="panel settings-panel" aria-labelledby="settings-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">SEUS PARÂMETROS</p>
+              <h2 id="settings-title">Configuração</h2>
+            </div>
+            <span class="step-badge" aria-hidden="true">01</span>
+          </div>
+
+          <div class="field-grid">
+            <div class="field field-wide">
+              <label for="game">Jogo</label>
+              <select id="game">
+                <option value="bac-bo" data-chip="5" data-color="90">Bac Bo (Evolution)</option>
+                <option value="mega-sic-bac" data-chip="0.5" data-color="85">Mega Sic Bac (Pragmatic)</option>
+              </select>
+            </div>
+
+            <div id="megaModeControl" class="field field-wide mega-mode-control" hidden>
+              <div class="mega-mode-copy">
+                <strong>Cálculo Mega Sic Bac</strong>
+                <small>Distribuir a margem entre jogada 1 e Gale 1</small>
+              </div>
+              <button id="megaModeToggle" class="toggle-button mega-mode-toggle" type="button" aria-pressed="true" aria-label="Cálculo Mega Sic Bac: ligado">
+                <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+                <span id="megaModeState">Ligado</span>
+              </button>
+            </div>
+
+            <div class="field">
+              <label for="bancaInicial">Banca inicial</label>
+              <div class="input-wrap">
+                <span class="input-prefix" aria-hidden="true">R$</span>
+                <input id="bancaInicial" name="bancaInicial" type="text" inputmode="decimal" autocomplete="off" value="1000" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="saldoAtual">Saldo atual</label>
+              <div class="input-wrap">
+                <span class="input-prefix" aria-hidden="true">R$</span>
+                <input id="saldoAtual" name="saldoAtual" type="text" inputmode="decimal" autocomplete="off" value="1000" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="stopWin">Stop win</label>
+              <div class="input-wrap">
+                <input id="stopWin" name="stopWin" type="text" inputmode="decimal" autocomplete="off" value="10" />
+                <span class="input-suffix" aria-hidden="true">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="stopLoss">Stop loss</label>
+              <div class="input-wrap">
+                <input id="stopLoss" name="stopLoss" type="text" inputmode="decimal" autocomplete="off" value="20" />
+                <span class="input-suffix" aria-hidden="true">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="fichaMinima">Ficha mínima</label>
+              <div class="input-wrap">
+                <span class="input-prefix" aria-hidden="true">R$</span>
+                <input id="fichaMinima" name="fichaMinima" type="text" inputmode="decimal" autocomplete="off" value="5" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="corPercentual">Percentual da cor</label>
+              <div class="input-wrap">
+                <input id="corPercentual" name="corPercentual" type="text" inputmode="decimal" autocomplete="off" value="90" aria-describedby="color-hint" />
+                <span class="input-suffix" aria-hidden="true">%</span>
+              </div>
+              <span id="color-hint" class="field-hint">Empate: <strong id="empatePercentual">10%</strong></span>
+            </div>
+          </div>
+
+          <div class="red-control">
+            <div class="red-copy">
+              <span class="red-icon" aria-hidden="true">!</span>
+              <span>
+                <strong>Tomei red</strong>
+                <small id="risk-mode-description">Orçamento de risco em 50% da margem</small>
+              </span>
+            </div>
+            <button id="redToggle" class="toggle-button" type="button" aria-pressed="false" aria-label="Tomei red: desligado">
+              <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+              <span id="toggleState">Desligado</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="results-section" aria-labelledby="results-title" aria-live="polite">
+          <div class="section-heading results-heading">
+            <div>
+              <p class="eyebrow">RESUMO DA SIMULAÇÃO</p>
+              <h2 id="results-title">Seus valores</h2>
+            </div>
+            <span class="step-badge" aria-hidden="true">02</span>
+          </div>
+
+          <div id="standardResults">
+            <div class="primary-results">
+            <article class="result-card margin-card">
+              <span class="card-label">Margem atual</span>
+              <strong id="margemAtual" class="card-value">R$ 0,00</strong>
+              <span class="card-detail">Original: <span id="margemOriginal">R$ 0,00</span></span>
+            </article>
+            <article class="result-card entry-card">
+              <h3 class="card-label">Entrada inicial</h3>
+              <dl class="stake-values">
+                <div class="stake-line color-stake">
+                  <dt><span class="stake-dot" aria-hidden="true"></span>Cor</dt>
+                  <dd id="entradaCor">R$ 0,00</dd>
+                </div>
+                <div class="stake-line tie-stake">
+                  <dt><span class="stake-dot" aria-hidden="true"></span>Empate</dt>
+                  <dd id="entradaEmpate">R$ 0,00</dd>
+                </div>
+              </dl>
+            </article>
+            <article class="result-card g1-card">
+              <h3 class="card-label">Entrada G1</h3>
+              <dl class="stake-values">
+                <div class="stake-line color-stake">
+                  <dt><span class="stake-dot" aria-hidden="true"></span>Cor</dt>
+                  <dd id="g1Cor">R$ 0,00</dd>
+                </div>
+                <div class="stake-line tie-stake">
+                  <dt><span class="stake-dot" aria-hidden="true"></span>Empate</dt>
+                  <dd id="g1Empate">R$ 0,00</dd>
+                </div>
+              </dl>
+            </article>
+            </div>
+
+            <div class="panel breakdown-panel">
+              <h3>Detalhamento das entradas</h3>
+              <dl class="result-list">
+                <div><dt>Orçamento de risco</dt><dd id="orcamentoRisco">R$ 0,00</dd></div>
+                <div><dt>Total bruto da entrada</dt><dd id="totalEntrada">R$ 0,00</dd></div>
+                <div><dt>Total bruto do G1</dt><dd id="totalG1">R$ 0,00</dd></div>
+                <div class="risk-row"><dt>Risco total real <span class="inline-help" title="Soma das quatro partes após arredondar e aplicar a ficha mínima.">i</span></dt><dd id="riscoTotalReal">R$ 0,00</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          <section id="megaResults" class="panel mega-results" aria-labelledby="mega-results-title" aria-live="polite" hidden>
+            <div class="mega-results-heading">
+              <div>
+                <p class="eyebrow">PROGRESSÃO MEGA SIC BAC</p>
+                <h3 id="mega-results-title">Jogada 1 + Gale 1</h3>
+              </div>
+              <span class="mega-chip-note">Ficha mínima R$ 0,50</span>
+            </div>
+            <div class="mega-margin">
+              <span>Margem total usada (M)</span>
+              <strong id="megaMargin">R$ 0,00</strong>
+            </div>
+            <p class="mega-unused-margin">Fora do cálculo por arredondamento: <strong id="megaUnusedMargin">R$ 0,00</strong></p>
+            <div id="megaWarning" class="mega-warning" role="status" hidden></div>
+            <div id="megaCalculation">
+              <div class="mega-stages">
+                <article class="mega-stage">
+                  <h4>Jogada 1</h4>
+                  <dl class="mega-stakes">
+                    <div><dt>Lado (S1)</dt><dd id="megaS1">R$ 0,00</dd></div>
+                    <div><dt>Empate (T1)</dt><dd id="megaT1">R$ 0,00</dd></div>
+                    <div class="stage-total"><dt>Total jogada 1</dt><dd id="megaTotal1">R$ 0,00</dd></div>
+                  </dl>
+                  <p class="stage-outcome"><span>Lucro se lado vencer</span><strong id="megaProfitSide1">R$ 0,00</strong></p>
+                  <p class="stage-outcome"><span>Lucro se empatar</span><strong id="megaProfitTie1">R$ 0,00</strong></p>
+                </article>
+                <article class="mega-stage gale-stage">
+                  <h4>Gale 1</h4>
+                  <dl class="mega-stakes">
+                    <div><dt>Lado (S2)</dt><dd id="megaS2">R$ 0,00</dd></div>
+                    <div><dt>Empate (T2)</dt><dd id="megaT2">R$ 0,00</dd></div>
+                    <div class="stage-total"><dt>Total do gale</dt><dd id="megaTotal2">R$ 0,00</dd></div>
+                  </dl>
+                  <p class="stage-outcome"><span>Lucro se lado vencer</span><strong id="megaProfitSide2">R$ 0,00</strong></p>
+                  <p class="stage-outcome"><span>Lucro se empatar</span><strong id="megaProfitTie2">R$ 0,00</strong></p>
+                </article>
+              </div>
+              <dl class="mega-summary">
+                <div><dt>Total das apostas (S1 + T1 + S2 + T2)</dt><dd id="megaTotal">R$ 0,00</dd></div>
+                <div class="mega-loss"><dt>Prejuízo máximo se perder também no gale</dt><dd id="megaMaxLoss">R$ 0,00</dd></div>
+              </dl>
+            </div>
+            <p class="mega-disclaimer">A vantagem da casa não muda com a progressão. Se o gale também perder, a perda é a margem inteira. Use uma margem que caiba na sua banca.</p>
+          </section>
+
+          <div class="panel session-panel">
+            <div class="section-heading compact-heading">
+              <div>
+                <p class="eyebrow">ACOMPANHAMENTO</p>
+                <h3>Resultado da sessão</h3>
+              </div>
+            </div>
+            <div class="session-result" id="resultadoContainer">
+              <strong id="resultado">R$ 0,00</strong>
+              <span id="percentualResultado">0,00%</span>
+            </div>
+            <div class="target-cards">
+              <article class="target-card goal-card">
+                <span>Meta de ganho</span>
+                <strong id="ganhoEsperado">R$ 0,00</strong>
+              </article>
+              <article class="target-card stop-card">
+                <span>Stop da banca</span>
+                <strong id="stopValor">R$ 0,00</strong>
+              </article>
+            </div>
+            <dl class="result-list target-list">
+              <div><dt>Falta para a meta</dt><dd id="faltaParaGanho">R$ 0,00</dd></div>
+              <div><dt>Valor final esperado</dt><dd id="valorFinalEsperado">R$ 0,00</dd></div>
+            </dl>
+          </div>
+        </section>
+      </div>
+
+      <footer class="page-footer">
+        <span class="footer-shield" aria-hidden="true">◇</span>
+        <p>Apenas uma ferramenta de cálculo. Não realiza apostas nem garante resultados.</p>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
