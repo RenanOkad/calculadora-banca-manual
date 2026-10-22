@@ -89,10 +89,41 @@ test("clamps color share and parses decimal commas safely", () => {
 
 test("calculates Mega Sic Bac progression for the supplied margin examples", () => {
   const expected = [
-    { margin: 25, first: [6, 1], gale: [14, 4], galeProfits: [3, 3] },
-    { margin: 27, first: [6, 1], gale: [15.5, 4.5], galeProfits: [4, 4.5] },
-    { margin: 35, first: [6, 1], gale: [21.5, 6.5], galeProfits: [8, 10.5] },
-    { margin: 1000, first: [210, 35], gale: [587, 168], galeProfits: [174, 176] },
+    {
+      margin: 17,
+      first: [3, 0.5],
+      gale: [10.5, 3],
+      firstProfits: [2.5, 0],
+      galeProfits: [4, 4],
+    },
+    {
+      margin: 20,
+      first: [4, 1],
+      gale: [11.5, 3.5],
+      firstProfits: [3, 2],
+      galeProfits: [3, 4.5],
+    },
+    {
+      margin: 25,
+      first: [5, 1],
+      gale: [14.5, 4.5],
+      firstProfits: [4, 1],
+      galeProfits: [4, 6.5],
+    },
+    {
+      margin: 30,
+      first: [6, 1],
+      gale: [18, 5],
+      firstProfits: [5, 0],
+      galeProfits: [6, 5],
+    },
+    {
+      margin: 40,
+      first: [8, 1.5],
+      gale: [23.5, 7],
+      firstProfits: [6.5, 1],
+      galeProfits: [7, 9],
+    },
   ];
 
   for (const example of expected) {
@@ -100,10 +131,23 @@ test("calculates Mega Sic Bac progression for the supplied margin examples", () 
     assert.equal(result.valid, true);
     assert.deepEqual([result.S1, result.T1], example.first);
     assert.deepEqual([result.S2, result.T2], example.gale);
+    assert.deepEqual([result.profitSide1, result.profitTie1], example.firstProfits);
     assert.deepEqual([result.profitSide2, result.profitTie2], example.galeProfits);
     assert.equal(result.total, example.margin);
     assert.equal(result.maxLoss, example.margin);
-    assert.equal(result.profitTie1, 0);
+    assert.equal(result.unusedMargin, 0);
+  }
+});
+
+test("keeps large Mega Sic Bac margins performant and rounds them down to a chip", () => {
+  const result = calculateMegaSicBac(1000);
+
+  assert.equal(result.valid, true);
+  assert.equal(result.margin, 1000);
+  assert.equal(result.total, 1000);
+  assert.equal(result.unusedMargin, 0);
+  for (const amount of [result.S1, result.T1, result.S2, result.T2]) {
+    assert.equal(amount * 2, Math.round(amount * 2));
   }
 });
 

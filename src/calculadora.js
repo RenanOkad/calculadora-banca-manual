@@ -18,9 +18,8 @@ export function calculateMegaSicBac(margin) {
   const chipSize = 0.5;
   const availableChips = availableMargin / chipSize;
   const chipRoundingTolerance = Number.EPSILON * Math.max(1, Math.abs(availableChips)) * 2;
-  const totalMargin = roundMoney(
-    Math.floor(availableChips + chipRoundingTolerance) * chipSize,
-  );
+  const marginUnits = Math.floor(availableChips + chipRoundingTolerance);
+  const totalMargin = roundMoney(marginUnits * chipSize);
   const unusedMargin = roundMoney(Math.max(0, availableMargin - totalMargin));
   const marginSummary = {
     availableMargin: roundMoney(availableMargin),
@@ -32,56 +31,110 @@ export function calculateMegaSicBac(margin) {
     return { valid: false, reason: "positive-margin", ...marginSummary };
   }
 
-  const firstTieUnits = totalMargin / 14.3;
-  const lowerUnits = Math.floor(firstTieUnits);
-  const fraction = firstTieUnits - lowerUnits;
-  const roundingTolerance = Number.EPSILON * Math.max(1, Math.abs(firstTieUnits)) * 2;
-  const roundedTieUnits = fraction <= 0.5 + roundingTolerance ? lowerUnits : lowerUnits + 1;
-  const T1 = Math.max(chipSize, roundedTieUnits * chipSize);
-  const S1 = roundMoney(6 * T1);
-  const remaining = roundMoney(totalMargin - (7 * T1));
+  let best = null;
+  const maxT1Units = Math.floor(marginUnits / 7);
 
-  if (remaining < 0) {
+  for (let t1Units = 1; t1Units <= maxT1Units; t1Units += 1) {
+    for (let s1Units = 1; s1Units <= 6 * t1Units; s1Units += 1) {
+      const remainingUnits = marginUnits - t1Units - s1Units;
+      if (remainingUnits < 2) continue;
+
+      const idealT2Units = (2 * remainingUnits) / 9;
+      const minimumT2Units = Math.max(1, Math.floor(idealT2Units) - 3);
+      const maximumT2Units = Math.min(
+        remainingUnits - 1,
+        Math.ceil(idealT2Units) + 3,
+      );
+
+      for (let t2Units = minimumT2Units; t2Units <= maximumT2Units; t2Units += 1) {
+        const s2Units = remainingUnits - t2Units;
+        if (s2Units < 1) continue;
+
+        const profits = [
+          s1Units - t1Units,
+          (2 * s2Units) - marginUnits,
+          (7 * t2Units) - marginUnits,
+        ];
+        const minimumProfit = Math.min(...profits);
+        const profitSpread = Math.max(...profits) - minimumProfit;
+        const candidate = {
+          t1Units,
+          s1Units,
+          t2Units,
+          s2Units,
+          minimumProfit,
+          profitSpread,
+        };
+
+        if (
+          best === null
+          || candidate.minimumProfit > best.minimumProfit
+          || (
+            candidate.minimumProfit === best.minimumProfit
+            && (
+              candidate.profitSpread < best.profitSpread
+              || (
+                candidate.profitSpread === best.profitSpread
+                && (
+                  candidate.s1Units > best.s1Units
+                  || (
+                    candidate.s1Units === best.s1Units
+                    && (
+                      candidate.t1Units > best.t1Units
+                      || (
+                        candidate.t1Units === best.t1Units
+                        && (
+                          candidate.s2Units > best.s2Units
+                          || (
+                            candidate.s2Units === best.s2Units
+                            && candidate.t2Units > best.t2Units
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ) {
+          best = candidate;
+        }
+      }
+    }
+  }
+
+  if (best === null) {
     return { valid: false, reason: "margin-too-small", ...marginSummary };
   }
 
-  const targetTie2 = (2 * remaining) / 9;
-  const targetTieUnits = targetTie2 / chipSize;
-  const targetTolerance = Number.EPSILON * Math.max(1, Math.abs(targetTieUnits)) * 2;
-  const lowerTie2 = Math.floor(targetTieUnits + targetTolerance) * chipSize;
-  const upperTie2 = Math.ceil(targetTieUnits - targetTolerance) * chipSize;
-  const candidates = [...new Set([lowerTie2, upperTie2])]
-    .map((tie) => Math.min(remaining, Math.max(0, roundMoney(tie))))
-    .map((T2) => {
-      const S2 = roundMoney(remaining - T2);
-      const profitSide2 = roundMoney((2 * S2) - totalMargin);
-      const profitTie2 = roundMoney((7 * T2) - totalMargin);
-      return { T2, S2, profitSide2, profitTie2, minimumProfit: Math.min(profitSide2, profitTie2) };
-    });
-  const bestGale = candidates.reduce((best, candidate) =>
-    candidate.minimumProfit > best.minimumProfit ? candidate : best,
-  );
+  const S1 = roundMoney(best.s1Units * chipSize);
+  const T1 = roundMoney(best.t1Units * chipSize);
+  const S2 = roundMoney(best.s2Units * chipSize);
+  const T2 = roundMoney(best.t2Units * chipSize);
   const total1 = roundMoney(S1 + T1);
-  const total2 = roundMoney(bestGale.S2 + bestGale.T2);
+  const total2 = roundMoney(S2 + T2);
   const total = roundMoney(total1 + total2);
   const profitSide1 = roundMoney(S1 - T1);
   const profitTie1 = roundMoney((6 * T1) - S1);
+  const profitSide2 = roundMoney((2 * S2) - totalMargin);
+  const profitTie2 = roundMoney((7 * T2) - totalMargin);
 
   return {
     valid: true,
-    warning: bestGale.minimumProfit <= 0 ? "gale-no-positive-profit" : null,
+    warning: best.minimumProfit <= 0 ? "gale-no-positive-profit" : null,
     ...marginSummary,
     S1,
     T1,
-    S2: bestGale.S2,
-    T2: bestGale.T2,
+    S2,
+    T2,
     total1,
     total2,
     total,
     profitSide1,
     profitTie1,
-    profitSide2: bestGale.profitSide2,
-    profitTie2: bestGale.profitTie2,
+    profitSide2,
+    profitTie2,
     maxLoss: roundMoney(totalMargin),
   };
 }
