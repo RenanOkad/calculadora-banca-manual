@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateBankroll, calculateMegaSicBac, parseDecimal } from "./calculadora.js";
+import {
+  calculateBankroll,
+  calculateMegaSicBac,
+  calculateMegaSicBacGale2,
+  parseDecimal,
+} from "./calculadora.js";
 
 const baseInput = {
   bancaInicial: 1000,
@@ -170,4 +175,67 @@ test("validates a non-positive Mega Sic Bac margin and warns when the gale canno
   assert.equal(smallMargin.valid, false);
   assert.equal(smallMargin.reason, "margin-too-small");
   assert.equal(calculateMegaSicBac(3.5).warning, "gale-no-positive-profit");
+});
+
+test("calculates Mega Sic Bac through Gale 2 for the supplied examples", () => {
+  const expected = [
+    {
+      margin: 40,
+      stakes: [2.5, 0.5, 7, 2, 22, 6],
+      profits: [2, 2, 2, 4, 2],
+      firstTieProfit: 0.5,
+    },
+    {
+      margin: 100,
+      stakes: [6.5, 1.5, 19, 5.5, 52.5, 15],
+      profits: [5, 5.5, 6, 5, 5],
+      firstTieProfit: 2.5,
+    },
+    {
+      margin: 200,
+      stakes: [13, 2.5, 37.5, 11, 105.5, 30.5],
+      profits: [10.5, 11, 13, 11, 13.5],
+      firstTieProfit: 2,
+    },
+    {
+      margin: 1000,
+      stakes: [67, 11.5, 188.5, 54, 528, 151],
+      profits: [55.5, 56, 57, 56, 57],
+      firstTieProfit: 2,
+    },
+  ];
+
+  for (const example of expected) {
+    const result = calculateMegaSicBacGale2(example.margin);
+    assert.equal(result.valid, true);
+    assert.deepEqual(
+      [result.S1, result.T1, result.S2, result.T2, result.S3, result.T3],
+      example.stakes,
+    );
+    assert.deepEqual(
+      [
+        result.profitSide1,
+        result.profitSide2,
+        result.profitTie2,
+        result.profitSide3,
+        result.profitTie3,
+      ],
+      example.profits,
+    );
+    assert.equal(result.profitTie1, example.firstTieProfit);
+    assert.equal(result.total, example.margin);
+    assert.equal(result.maxLoss, example.margin);
+    assert.equal(result.unusedMargin, 0);
+  }
+});
+
+test("rounds Gale 2 margin down and warns when its minimum profit is not positive", () => {
+  const rounded = calculateMegaSicBacGale2(40.49);
+  assert.equal(rounded.margin, 40);
+  assert.equal(rounded.unusedMargin, 0.49);
+  assert.equal(rounded.total, 40);
+
+  const tooSmall = calculateMegaSicBacGale2(5);
+  assert.equal(tooSmall.valid, true);
+  assert.equal(tooSmall.warning, "gale2-no-positive-profit");
 });

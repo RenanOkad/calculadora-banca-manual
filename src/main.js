@@ -1,5 +1,10 @@
 import "./style.css";
-import { calculateBankroll, calculateMegaSicBac, parseDecimal } from "./calculadora.js";
+import {
+  calculateBankroll,
+  calculateMegaSicBac,
+  calculateMegaSicBacGale2,
+  parseDecimal,
+} from "./calculadora.js";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -40,8 +45,11 @@ const megaModeControl = document.querySelector("#megaModeControl");
 const megaModeToggle = document.querySelector("#megaModeToggle");
 const megaResults = document.querySelector("#megaResults");
 const standardResults = document.querySelector("#standardResults");
+const gale1Option = document.querySelector("#gale1Option");
+const gale2Option = document.querySelector("#gale2Option");
 let tomouRed = false;
 let megaModeEnabled = false;
+let megaProgression = "gale1";
 
 function formatCurrency(value) {
   return currencyFormatter.format(Number.isFinite(value) ? value : 0);
@@ -61,10 +69,15 @@ function formatSignedPercent(value) {
 }
 
 function renderMegaCalculation(margin) {
-  const calculation = calculateMegaSicBac(margin);
+  const isGale2 = megaProgression === "gale2";
+  const calculation = isGale2
+    ? calculateMegaSicBacGale2(margin)
+    : calculateMegaSicBac(margin);
   document.querySelector("#megaMargin").textContent = formatCurrency(calculation.margin);
   document.querySelector("#megaUnusedMargin").textContent =
     formatCurrency(calculation.unusedMargin);
+  document.querySelector("#mega-results-title").textContent =
+    isGale2 ? "Jogada 1 + Gale 1 + Gale 2" : "Jogada 1 + Gale 1";
 
   const warning = document.querySelector("#megaWarning");
   const calculationContent = document.querySelector("#megaCalculation");
@@ -72,12 +85,21 @@ function renderMegaCalculation(margin) {
     "positive-margin": "Informe um orçamento de risco maior que zero para calcular as apostas.",
     "margin-too-small": "Margem muito pequena para reservar a jogada 1 e fechar o gale. Use pelo menos R$ 3,50.",
     "gale-no-positive-profit": "Margem pequena: o Gale 1 não fecha lucro positivo em ambos os resultados. A perda máxima permanece igual a M.",
+    "gale2-no-positive-profit": "A margem é pequena demais para fechar o Gale 2 com lucro em todas as rodadas.",
   };
 
   warning.hidden = !calculation.reason && !calculation.warning;
   warning.textContent = warningMessages[calculation.reason ?? calculation.warning] ?? "";
   warning.classList.toggle("is-error", Boolean(calculation.reason));
   calculationContent.hidden = !calculation.valid;
+  document.querySelector("#megaStage3").hidden = !isGale2;
+  document.querySelector("#megaStages").classList.toggle("has-gale2", isGale2);
+  document.querySelector("#megaTotalLabel").textContent = isGale2
+    ? "Total das apostas (S1 + T1 + S2 + T2 + S3 + T3)"
+    : "Total das apostas (S1 + T1 + S2 + T2)";
+  document.querySelector("#megaMaxLossLabel").textContent = isGale2
+    ? "Prejuízo máximo se perder também no Gale 2"
+    : "Prejuízo máximo se perder também no gale";
 
   if (!calculation.valid) return;
 
@@ -92,6 +114,13 @@ function renderMegaCalculation(margin) {
     megaMaxLoss: calculation.maxLoss,
     megaUnusedMargin: calculation.unusedMargin,
   };
+  if (isGale2) {
+    Object.assign(values, {
+      megaS3: calculation.S3,
+      megaT3: calculation.T3,
+      megaTotal3: calculation.total3,
+    });
+  }
   Object.entries(values).forEach(([id, value]) => {
     document.getElementById(id).textContent = formatCurrency(value);
   });
@@ -102,6 +131,12 @@ function renderMegaCalculation(margin) {
     megaProfitSide2: calculation.profitSide2,
     megaProfitTie2: calculation.profitTie2,
   };
+  if (isGale2) {
+    Object.assign(profits, {
+      megaProfitSide3: calculation.profitSide3,
+      megaProfitTie3: calculation.profitTie3,
+    });
+  }
   Object.entries(profits).forEach(([id, value]) => {
     const element = document.getElementById(id);
     element.textContent = formatSignedCurrency(value);
@@ -132,6 +167,10 @@ function render() {
   const showMegaCalculation = isMegaSicBac && megaModeEnabled;
   standardResults.hidden = showMegaCalculation;
   megaResults.hidden = !showMegaCalculation;
+  gale1Option.classList.toggle("is-selected", megaProgression === "gale1");
+  gale2Option.classList.toggle("is-selected", megaProgression === "gale2");
+  gale1Option.setAttribute("aria-pressed", String(megaProgression === "gale1"));
+  gale2Option.setAttribute("aria-pressed", String(megaProgression === "gale2"));
 
   if (showMegaCalculation) {
     renderMegaCalculation(result.orcamentoDeRisco);
@@ -174,6 +213,16 @@ game.addEventListener("change", () => {
 
 megaModeToggle.addEventListener("click", () => {
   megaModeEnabled = !megaModeEnabled;
+  render();
+});
+
+gale1Option.addEventListener("click", () => {
+  megaProgression = "gale1";
+  render();
+});
+
+gale2Option.addEventListener("click", () => {
+  megaProgression = "gale2";
   render();
 });
 

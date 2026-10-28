@@ -9,8 +9,8 @@
     />
     <meta name="theme-color" content="#101511" />
     <title>Calculadora de banca</title>
-    <script type="module" crossorigin src="/assets/index-CQ2OMLKz.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DIEnPODD.css">
+    <script type="module" crossorigin src="/assets/index-DOFJSOax.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DnHpA5ta.css">
   </head>
   <body>
     <main class="app-shell">
@@ -184,6 +184,13 @@
               </div>
               <span class="mega-chip-note">Ficha mínima R$ 0,50</span>
             </div>
+            <div class="mega-progression-control">
+              <span class="mega-progression-label">Progressão</span>
+              <div class="mega-progression-switch" role="group" aria-label="Quantidade de gales">
+                <button id="gale1Option" class="progression-option is-selected" type="button" aria-pressed="true">Até o Gale 1</button>
+                <button id="gale2Option" class="progression-option" type="button" aria-pressed="false">Até o Gale 2</button>
+              </div>
+            </div>
             <div class="mega-margin">
               <span>Margem total usada (M)</span>
               <strong id="megaMargin">R$ 0,00</strong>
@@ -191,7 +198,7 @@
             <p class="mega-unused-margin">Fora do cálculo por arredondamento: <strong id="megaUnusedMargin">R$ 0,00</strong></p>
             <div id="megaWarning" class="mega-warning" role="status" hidden></div>
             <div id="megaCalculation">
-              <div class="mega-stages">
+              <div id="megaStages" class="mega-stages">
                 <article class="mega-stage">
                   <h4>Jogada 1</h4>
                   <dl class="mega-stakes">
@@ -212,10 +219,20 @@
                   <p class="stage-outcome"><span>Lucro se lado vencer</span><strong id="megaProfitSide2">R$ 0,00</strong></p>
                   <p class="stage-outcome"><span>Lucro se empatar</span><strong id="megaProfitTie2">R$ 0,00</strong></p>
                 </article>
+                <article id="megaStage3" class="mega-stage gale-stage" hidden>
+                  <h4>Gale 2</h4>
+                  <dl class="mega-stakes">
+                    <div><dt>Lado (S3)</dt><dd id="megaS3">R$ 0,00</dd></div>
+                    <div><dt>Empate (T3)</dt><dd id="megaT3">R$ 0,00</dd></div>
+                    <div class="stage-total"><dt>Total do gale</dt><dd id="megaTotal3">R$ 0,00</dd></div>
+                  </dl>
+                  <p class="stage-outcome"><span>Lucro se lado vencer</span><strong id="megaProfitSide3">R$ 0,00</strong></p>
+                  <p class="stage-outcome"><span>Lucro se empatar</span><strong id="megaProfitTie3">R$ 0,00</strong></p>
+                </article>
               </div>
               <dl class="mega-summary">
-                <div><dt>Total das apostas (S1 + T1 + S2 + T2)</dt><dd id="megaTotal">R$ 0,00</dd></div>
-                <div class="mega-loss"><dt>Prejuízo máximo se perder também no gale</dt><dd id="megaMaxLoss">R$ 0,00</dd></div>
+                <div><dt id="megaTotalLabel">Total das apostas (S1 + T1 + S2 + T2)</dt><dd id="megaTotal">R$ 0,00</dd></div>
+                <div class="mega-loss"><dt id="megaMaxLossLabel">Prejuízo máximo se perder também no gale</dt><dd id="megaMaxLoss">R$ 0,00</dd></div>
               </dl>
             </div>
             <p class="mega-disclaimer">A vantagem da casa não muda com a progressão. Se o gale também perder, a perda é a margem inteira. Use uma margem que caiba na sua banca.</p>

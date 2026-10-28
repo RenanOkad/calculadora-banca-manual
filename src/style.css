@@ -631,6 +631,51 @@ h2 {
   white-space: nowrap;
 }
 
+.mega-progression-control {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.mega-progression-label {
+  color: #c2cec0;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.mega-progression-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #344137;
+  border-radius: 11px;
+  background: #111713;
+}
+
+.progression-option {
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #aeb9af;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.progression-option.is-selected {
+  border-color: rgba(184, 236, 104, 0.3);
+  background: rgba(68, 96, 43, 0.4);
+  color: #d3f5a2;
+}
+
+.progression-option:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
 .mega-margin {
   display: flex;
   align-items: center;
@@ -690,6 +735,10 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.mega-stages.has-gale2 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .mega-stage {
@@ -1051,6 +1100,10 @@ h2 {
   }
 
   .mega-stages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mega-stages.has-gale2 {
     grid-template-columns: minmax(0, 1fr);
   }
 
