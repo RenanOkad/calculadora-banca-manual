@@ -9,8 +9,8 @@
     />
     <meta name="theme-color" content="#101511" />
     <title>Calculadora de banca</title>
-    <script type="module" crossorigin src="/assets/index-DOFJSOax.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DnHpA5ta.css">
+    <script type="module" crossorigin src="/assets/index-DAUXYkrS.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-gG64DzY-.css">
   </head>
   <body>
     <main class="app-shell">
@@ -81,12 +81,29 @@
                 <input id="stopWin" name="stopWin" type="text" inputmode="decimal" autocomplete="off" value="10" />
                 <span class="input-suffix" aria-hidden="true">%</span>
               </div>
+              <div class="quick-stop-controls" data-field="stopWin">
+                <div class="quick-stop-buttons" role="group" aria-label="Percentuais rápidos de stop win">
+                  <button type="button" class="quick-stop-button" data-percent="10">10%</button>
+                  <button type="button" class="quick-stop-button" data-percent="20">20%</button>
+                  <button type="button" class="quick-stop-button" data-percent="50">50%</button>
+                  <button type="button" class="quick-stop-button" data-percent="100">100%</button>
+                </div>
+                <span class="quick-stop-value" aria-live="polite"></span>
+              </div>
             </div>
             <div class="field">
               <label for="stopLoss">Stop loss</label>
               <div class="input-wrap">
                 <input id="stopLoss" name="stopLoss" type="text" inputmode="decimal" autocomplete="off" value="20" />
                 <span class="input-suffix" aria-hidden="true">%</span>
+              </div>
+              <div class="quick-stop-controls" data-field="stopLoss">
+                <div class="quick-stop-buttons" role="group" aria-label="Percentuais rápidos de stop loss">
+                  <button type="button" class="quick-stop-button" data-percent="10">10%</button>
+                  <button type="button" class="quick-stop-button" data-percent="15">15%</button>
+                  <button type="button" class="quick-stop-button" data-percent="20">20%</button>
+                </div>
+                <span class="quick-stop-value" aria-live="polite"></span>
               </div>
             </div>
             <div class="field">
@@ -191,6 +208,13 @@
                 <button id="gale2Option" class="progression-option" type="button" aria-pressed="false">Até o Gale 2</button>
               </div>
             </div>
+            <div id="megaTieRuleControl" class="mega-tie-rule-control">
+              <label for="megaTieRule">Empate na Jogada 1</label>
+              <select id="megaTieRule" class="mega-tie-rule">
+                <option value="free">Livre</option>
+                <option value="zero">Zero</option>
+              </select>
+            </div>
             <div class="mega-margin">
               <span>Margem total usada (M)</span>
               <strong id="megaMargin">R$ 0,00</strong>
@@ -236,6 +260,107 @@
               </dl>
             </div>
             <p class="mega-disclaimer">A vantagem da casa não muda com a progressão. Se o gale também perder, a perda é a margem inteira. Use uma margem que caiba na sua banca.</p>
+          </section>
+
+          <section class="panel insights-panel" aria-labelledby="greens-title">
+            <div class="insights-heading">
+              <div>
+                <p class="eyebrow">PLANEJAMENTO DA SESSÃO</p>
+                <h3 id="greens-title">Greens 1 para 1</h3>
+              </div>
+            </div>
+            <div class="greens-main">
+              <span>Greens para atingir o stop win</span>
+              <strong id="greensRequired">—</strong>
+            </div>
+            <dl class="insight-details">
+              <div><dt>Lucro por green</dt><dd id="greenProfit">—</dd></div>
+              <div><dt>Entradas da progressão</dt><dd id="greenStakes">—</dd></div>
+              <div><dt>Margem usada</dt><dd id="greenMargin">—</dd></div>
+              <div><dt>Derrotas completas que cabem no stop loss</dt><dd id="completeLosses">—</dd></div>
+            </dl>
+            <p id="lossWarning" class="loss-warning" hidden>Uma derrota já passa do stop loss.</p>
+            <p class="greens-legend">Escala: <span class="tone-green">até 4</span>, <span class="tone-amber">5–8</span>, <span class="tone-red">9 ou mais</span>.</p>
+          </section>
+
+          <section class="panel insights-panel comparison-panel" aria-labelledby="comparison-title">
+            <div class="insights-heading">
+              <div>
+                <p class="eyebrow">COMPARAÇÃO DE RESULTADOS</p>
+                <h3 id="comparison-title">Greens para o stop win</h3>
+              </div>
+            </div>
+            <label class="margin-adjust-control" for="adjustMargin">
+              <span>Reajustar margem a cada green</span>
+              <select id="adjustMargin">
+                <option value="yes" selected>Sim</option>
+                <option value="no">Não</option>
+              </select>
+            </label>
+            <div class="goal-tolerance-control">
+              <span>Tolerância da meta</span>
+              <div class="goal-tolerance-buttons" role="group" aria-label="Tolerância da meta">
+                <button type="button" class="goal-tolerance-button" data-tolerance="0">0%</button>
+                <button type="button" class="goal-tolerance-button" data-tolerance="5">5%</button>
+                <button type="button" class="goal-tolerance-button is-selected" data-tolerance="10" aria-pressed="true">10%</button>
+              </div>
+            </div>
+            <p class="effective-goal">Meta considerada: <strong id="effectiveGoalAmount">—</strong> <span id="effectiveGoalRate">(90% de —)</span></p>
+            <div class="comparison-table-wrapper">
+              <table class="comparison-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Rodada</th>
+                    <th scope="col">Total jogado (Aᵢ)</th>
+                    <th scope="col">Cor + empate<br />lucro · greens</th>
+                    <th scope="col">Só na cor<br />lucro · greens</th>
+                  </tr>
+                </thead>
+                <tbody id="comparisonRows"></tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row">Pior caso</th>
+                    <td>—</td>
+                    <td id="comparisonWithTieWorst">—</td>
+                    <td id="comparisonColorOnlyWorst">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" colspan="3">Diferença</th>
+                    <td id="comparisonDifference">—</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <div class="comparison-grid">
+              <article class="comparison-block with-tie-block">
+                <h4>Cor + empate</h4>
+                <span class="simulation-label" id="withTieSimulationLabel">Pior caso com reajuste</span>
+                <strong id="withTieSimulationGreens" class="simulation-greens">—</strong>
+                <p id="withTieSimulationDetails" class="simulation-details">melhor caso: — · sem reajuste: —</p>
+                <button id="withTiePathToggle" class="path-toggle" type="button" aria-expanded="false" aria-controls="withTiePath" hidden>Ver caminho</button>
+                <div id="withTiePath" class="path-table-wrapper" hidden>
+                  <table class="path-table">
+                    <thead><tr><th>Green nº</th><th>Banca antes</th><th>Margem</th><th>Lucro (pior caso)</th><th>Banca após o green</th></tr></thead>
+                    <tbody id="withTiePathRows"></tbody>
+                  </table>
+                </div>
+              </article>
+              <article class="comparison-block color-only-block">
+                <h4>Só na cor</h4>
+                <span class="simulation-label" id="colorOnlySimulationLabel">Pior caso com reajuste</span>
+                <strong id="colorOnlySimulationGreens" class="simulation-greens">—</strong>
+                <p id="colorOnlySimulationDetails" class="simulation-details">melhor caso: — · sem reajuste: —</p>
+                <button id="colorOnlyPathToggle" class="path-toggle" type="button" aria-expanded="false" aria-controls="colorOnlyPath" hidden>Ver caminho</button>
+                <div id="colorOnlyPath" class="path-table-wrapper" hidden>
+                  <table class="path-table">
+                    <thead><tr><th>Green nº</th><th>Banca antes</th><th>Margem</th><th>Lucro (pior caso)</th><th>Banca após o green</th></tr></thead>
+                    <tbody id="colorOnlyPathRows"></tbody>
+                  </table>
+                </div>
+                <p id="colorOnlyWarning" class="comparison-warning"></p>
+              </article>
+            </div>
+            <p class="greens-legend">Escala: <span class="tone-green">até 4</span>, <span class="tone-amber">5–8</span>, <span class="tone-red">9 ou mais</span>. Os valores da rodada ficam constantes durante cada green; a margem pode ser reajustada entre greens.</p>
           </section>
 
           <div class="panel session-panel">

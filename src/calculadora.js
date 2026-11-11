@@ -13,7 +13,111 @@ function roundMoney(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-export function calculateMegaSicBac(margin) {
+function calculateMegaSicBacZeroTie(marginUnits, marginSummary) {
+  const chipSize = 0.5;
+  let best = null;
+  const maxT1Units = Math.floor(marginUnits / 7);
+
+  for (let t1Units = 1; t1Units <= maxT1Units; t1Units += 1) {
+    const remainingAfterFirstUnits = marginUnits - (7 * t1Units);
+    const idealT2Units = Math.floor((remainingAfterFirstUnits * 2) / 9);
+    const minimumT2Units = Math.max(1, idealT2Units - 6);
+    const maximumT2Units = Math.min(remainingAfterFirstUnits - 1, idealT2Units + 6);
+
+    for (let t2Units = minimumT2Units; t2Units <= maximumT2Units; t2Units += 1) {
+      const s2Units = remainingAfterFirstUnits - t2Units;
+      if (s2Units < 1) continue;
+
+      const profits = [
+        (5 * t1Units),
+        (2 * s2Units) - marginUnits,
+        (7 * t2Units) - marginUnits,
+      ];
+      const minimumProfit = Math.min(...profits);
+      const profitSpread = Math.max(...profits) - minimumProfit;
+      const candidate = {
+        t1Units,
+        s1Units: 6 * t1Units,
+        t2Units,
+        s2Units,
+        minimumProfit,
+        profitSpread,
+      };
+
+      if (
+        best === null
+        || candidate.minimumProfit > best.minimumProfit
+        || (
+          candidate.minimumProfit === best.minimumProfit
+          && (
+            candidate.profitSpread < best.profitSpread
+            || (
+              candidate.profitSpread === best.profitSpread
+              && (
+                candidate.s1Units > best.s1Units
+                || (
+                  candidate.s1Units === best.s1Units
+                  && (
+                    candidate.t1Units > best.t1Units
+                    || (
+                      candidate.t1Units === best.t1Units
+                      && (
+                        candidate.s2Units > best.s2Units
+                        || (
+                          candidate.s2Units === best.s2Units
+                          && candidate.t2Units > best.t2Units
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      ) {
+        best = candidate;
+      }
+    }
+  }
+
+  if (best === null) {
+    return { valid: false, reason: "margin-too-small", ...marginSummary };
+  }
+
+  const amount = (units) => roundMoney(units * chipSize);
+  const S1 = amount(best.s1Units);
+  const T1 = amount(best.t1Units);
+  const S2 = amount(best.s2Units);
+  const T2 = amount(best.t2Units);
+  const total1 = roundMoney(S1 + T1);
+  const total2 = roundMoney(S2 + T2);
+  const total = roundMoney(total1 + total2);
+  const profitSide1 = roundMoney(S1 - T1);
+  const profitTie1 = roundMoney((6 * T1) - S1);
+  const profitSide2 = roundMoney((2 * S2) - marginSummary.margin);
+  const profitTie2 = roundMoney((7 * T2) - marginSummary.margin);
+
+  return {
+    valid: true,
+    warning: best.minimumProfit <= 0 ? "gale-no-positive-profit" : null,
+    ...marginSummary,
+    S1,
+    T1,
+    S2,
+    T2,
+    total1,
+    total2,
+    total,
+    profitSide1,
+    profitTie1,
+    profitSide2,
+    profitTie2,
+    maxLoss: roundMoney(marginSummary.margin),
+  };
+}
+
+export function calculateMegaSicBac(margin, tieRule = "free") {
   const availableMargin = Math.max(0, finiteOrZero(margin));
   const chipSize = 0.5;
   const availableChips = availableMargin / chipSize;
@@ -29,6 +133,10 @@ export function calculateMegaSicBac(margin) {
 
   if (availableMargin <= 0) {
     return { valid: false, reason: "positive-margin", ...marginSummary };
+  }
+
+  if (tieRule === "zero") {
+    return calculateMegaSicBacZeroTie(marginUnits, marginSummary);
   }
 
   let best = null;
@@ -362,5 +470,185 @@ export function calculateBankroll({
     resultado,
     percentualResultado,
     faltaParaGanho,
+  };
+}
+
+export function calculateGreensProgression({
+  margin,
+  stopWin,
+  stopLoss,
+  minimumChip,
+  levels,
+}) {
+  const safeMargin = Math.max(0, finiteOrZero(margin));
+  const safeStopWin = Math.max(0, finiteOrZero(stopWin));
+  const safeStopLoss = Math.max(0, finiteOrZero(stopLoss));
+  const safeChip = Math.max(0, finiteOrZero(minimumChip));
+  const safeLevels = Math.max(1, Math.floor(finiteOrZero(levels)));
+  const unitCount = (2 ** safeLevels) - 1;
+  const idealProfit = unitCount > 0 ? safeMargin / unitCount : 0;
+  const chipUnits = safeChip > 0 ? idealProfit / safeChip : idealProfit;
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(chipUnits)) * 2;
+  const profitPerGreen = safeChip > 0
+    ? Math.min(safeMargin, Math.floor(chipUnits + tolerance) * safeChip)
+    : idealProfit;
+  const stakes = Array.from({ length: safeLevels }, (_, index) => (
+    roundMoney(profitPerGreen * (2 ** index))
+  ));
+  const usedMargin = roundMoney(profitPerGreen * unitCount);
+
+  return {
+    idealProfit: roundMoney(idealProfit),
+    profitPerGreen: roundMoney(profitPerGreen),
+    stakes,
+    usedMargin,
+    greens: profitPerGreen > 0 ? Math.ceil(safeStopWin / profitPerGreen) : null,
+    completeLosses: usedMargin > 0 ? Math.floor(safeStopLoss / usedMargin) : null,
+  };
+}
+
+export function calculateColorComparison({ stopWin, rounds }) {
+  const safeStopWin = Math.max(0, finiteOrZero(stopWin));
+  const normalizedRounds = rounds.map(({ color, tie }) => ({
+    color: finiteOrZero(color),
+    tie: finiteOrZero(tie),
+  }));
+  let previousTotal = 0;
+  const withTie = [];
+  const colorOnly = [];
+
+  normalizedRounds.forEach(({ color, tie }) => {
+    const total = color + tie;
+    withTie.push(roundMoney(color - tie - previousTotal));
+    colorOnly.push(roundMoney(total - previousTotal));
+    previousTotal += total;
+  });
+
+  const greensFor = (profit) => (
+    profit > 0 ? Math.ceil(safeStopWin / profit) : null
+  );
+  const worstProfitWithTie = withTie.length ? Math.min(...withTie) : 0;
+  const worstProfitColorOnly = colorOnly.length ? Math.min(...colorOnly) : 0;
+
+  return {
+    withTie: withTie.map((profit) => ({ profit, greens: greensFor(profit) })),
+    colorOnly: colorOnly.map((profit) => ({ profit, greens: greensFor(profit) })),
+    worstWithTie: {
+      profit: worstProfitWithTie,
+      greens: greensFor(worstProfitWithTie),
+    },
+    worstColorOnly: {
+      profit: worstProfitColorOnly,
+      greens: greensFor(worstProfitColorOnly),
+    },
+  };
+}
+
+function floorToMultiple(value, multiple) {
+  const safeValue = Math.max(0, finiteOrZero(value));
+  const safeMultiple = Math.max(0, finiteOrZero(multiple));
+  if (safeMultiple === 0) return roundMoney(safeValue);
+
+  const units = safeValue / safeMultiple;
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(units)) * 2;
+  return roundMoney(Math.floor(units + tolerance) * safeMultiple);
+}
+
+export function simulateGrowingGreens({
+  bankroll,
+  stopLoss,
+  stopWin,
+  tolerance = 0,
+  initialMargin,
+  minimumChip,
+  adjustMargin = true,
+  strategy,
+  roundsForMargin,
+  outcome = "worst",
+  iterationLimit = 500,
+}) {
+  if (typeof roundsForMargin !== "function") {
+    throw new TypeError("roundsForMargin must be a function");
+  }
+  if (strategy !== "withTie" && strategy !== "colorOnly") {
+    throw new RangeError("strategy must be withTie or colorOnly");
+  }
+  if (outcome !== "worst" && outcome !== "best") {
+    throw new RangeError("outcome must be worst or best");
+  }
+
+  const initialBankroll = Math.max(0, finiteOrZero(bankroll));
+  const safeStopLoss = Math.max(0, finiteOrZero(stopLoss));
+  const safeStopWin = Math.max(0, finiteOrZero(stopWin));
+  const safeTolerance = Math.min(1, Math.max(0, finiteOrZero(tolerance)));
+  const safeInitialMargin = Math.max(0, finiteOrZero(initialMargin));
+  const safeChip = Math.max(0, finiteOrZero(minimumChip));
+  const effectiveStopWin = roundMoney(safeStopWin * (1 - safeTolerance));
+  const target = roundMoney(initialBankroll + effectiveStopWin);
+  const maxIterations = Math.max(0, Math.floor(finiteOrZero(iterationLimit)));
+  let currentBankroll = initialBankroll;
+  const path = [];
+
+  for (let index = 0; currentBankroll < target && index < maxIterations; index += 1) {
+    let margin = safeInitialMargin;
+    if (adjustMargin) {
+      if (safeStopLoss > 0 && safeInitialMargin <= safeStopLoss) {
+        const stopFloor = initialBankroll - safeStopLoss;
+        const fraction = safeInitialMargin / safeStopLoss;
+        margin = floorToMultiple(
+          fraction * Math.max(0, currentBankroll - stopFloor),
+          safeChip,
+        );
+      } else if (initialBankroll > 0) {
+        margin = floorToMultiple(
+          safeInitialMargin * currentBankroll / initialBankroll,
+          safeChip,
+        );
+      }
+    }
+
+    const rounds = roundsForMargin(margin);
+    if (!Array.isArray(rounds) || rounds.length === 0) {
+      return { greens: null, path, reason: "invalid-calculation" };
+    }
+
+    let previousTotal = 0;
+    const profits = rounds.map(({ color, tie }) => {
+      const safeColor = finiteOrZero(color);
+      const safeTie = finiteOrZero(tie);
+      const total = safeColor + safeTie;
+      const profit = strategy === "withTie"
+        ? safeColor - safeTie - previousTotal
+        : total - previousTotal;
+      previousTotal += total;
+      return roundMoney(profit);
+    });
+    const profit = outcome === "worst"
+      ? Math.min(...profits)
+      : Math.max(...profits);
+    if (!Number.isFinite(profit) || profit <= 0) {
+      return { greens: null, path, reason: "non-positive-profit" };
+    }
+
+    path.push({
+      green: index + 1,
+      bankroll: roundMoney(currentBankroll),
+      margin: roundMoney(margin),
+      profit,
+      bankrollAfter: roundMoney(currentBankroll + profit),
+    });
+    currentBankroll = roundMoney(currentBankroll + profit);
+  }
+
+  if (currentBankroll < target) {
+    return { greens: null, path, reason: "iteration-limit" };
+  }
+
+  return {
+    greens: path.length,
+    path,
+    reason: null,
+    effectiveStopWin,
+    stopWin: safeStopWin,
   };
 }
